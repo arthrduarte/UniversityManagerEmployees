@@ -13,23 +13,22 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.Grade)
-            </th>
-            <th>
                 <a asp-action="Index" asp-route-sortOrder="@ViewData["CourseSort"]">Course</a>
             </th>
             <th>
                 <a asp-action="Index" asp-route-sortOrder="@ViewData["StudentSort"]">Student</a>
             </th>
-            <th></th>
+            <th>
+                @Html.DisplayNameFor(model => model.Grade)
+            </th>
+            <th>
+                <a asp-action="EditAll">Edit All</a>
+            </th>
         </tr>
     </thead>
     <tbody>
 @foreach (var item in Model) {
         <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Grade)
-            </td>
             <td>
                     @Html.DisplayFor(modelItem => item.CourseCodeNavigation.Code) - @Html.DisplayFor(modelItem => item.CourseCodeNavigation.Title)
             </td>
@@ -37,9 +36,10 @@
                     @Html.DisplayFor(modelItem => item.Student.Id) - @Html.DisplayFor(modelItem => item.Student.Name)
             </td>
             <td>
-                @Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
-                @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
-                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
+                @Html.DisplayFor(modelItem => item.Grade)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-studentId="@item.StudentId" asp-route-courseCode="@item.CourseCode" >Edit</a>
             </td>
         </tr>
 }
