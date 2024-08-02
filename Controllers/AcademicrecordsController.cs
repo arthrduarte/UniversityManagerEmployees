@@ -19,10 +19,30 @@ namespace lab6.Controllers
         }
 
         // GET: Academicrecords
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string sortOrder)
         {
-            var studentrecordContext = _context.Academicrecords.Include(a => a.CourseCodeNavigation).Include(a => a.Student);
-            return View(await studentrecordContext.ToListAsync());
+            ViewData["CourseSort"] = String.IsNullOrEmpty(sortOrder) ? "course_desc" : "";
+            ViewData["StudentSort"] = sortOrder == "Student" ? "student_desc" : "Student";
+
+            var recordsContext = from r in _context.Academicrecords.
+                          Include(a => a.CourseCodeNavigation).
+                          Include(a => a.Student)
+                          select r;
+
+            switch (sortOrder)
+            {
+                case "course_desc":
+                    recordsContext = recordsContext.OrderBy(r => r.Grade == null ? 0 : 1).ThenByDescending(r => r.CourseCodeNavigation.Title);
+                    break;
+                case "student_desc":
+                    recordsContext = recordsContext.OrderBy(r => r.Grade == null ? 0 : 1).ThenByDescending(r => r.Student.Name);
+                    break;
+                default:
+                    recordsContext = recordsContext.OrderBy(r => r.Grade == null ? 0 : 1).ThenByDescending(r => r.CourseCodeNavigation.Title);
+                    break;
+            }
+
+            return View(await recordsContext.AsNoTracking().ToListAsync());
         }
 
        
