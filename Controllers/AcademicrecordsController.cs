@@ -21,28 +21,22 @@ namespace LabAssignment6.Controllers
         // GET: Academicrecords
         public async Task<IActionResult> Index(string sortOrder)
         {
-            ViewData["CourseSortParm"] = String.IsNullOrEmpty(sortOrder) ? "course_desc" : "";
-            ViewData["StudentSortParm"] = sortOrder == "Student" ? "student_desc" : "Student";
+            ViewData["CourseSort"] = String.IsNullOrEmpty(sortOrder) ? "course_desc" : "";
+            ViewData["StudentSort"] = sortOrder == "Student" ? "student_desc" : "Student";
 
             var records = from r in _context.Academicrecords.Include(a => a.CourseCodeNavigation).Include(a => a.Student)
                           select r;
 
-            records = records.OrderBy(r => r.Grade == null).ThenBy(r => r.CourseCodeNavigation.Title);
 
             switch (sortOrder)
             {
                 case "course_desc":
                     records = records.OrderByDescending(r => r.Grade == null).ThenByDescending(r => r.CourseCodeNavigation.Title);
                     break;
-                case "Student":
-                    records = records.OrderBy(r => r.Grade == null).ThenBy(r => r.Student.Name);
-                    break;
                 case "student_desc":
                     records = records.OrderByDescending(r => r.Grade == null).ThenByDescending(r => r.Student.Name);
                     break;
-                default:
-                    records = records.OrderBy(r => r.Grade == null).ThenBy(r => r.CourseCodeNavigation.Title);
-                    break;
+
             }
 
             return View(await records.AsNoTracking().ToListAsync());
@@ -50,8 +44,8 @@ namespace LabAssignment6.Controllers
         // GET: Academicrecords/EditAll
         public async Task<IActionResult> EditAll(string sortOrder)
         {
-            ViewData["CourseSortParm"] = String.IsNullOrEmpty(sortOrder) ? "course_desc" : "";
-            ViewData["StudentSortParm"] = sortOrder == "Student" ? "student_desc" : "Student";
+            ViewData["CourseSort"] = String.IsNullOrEmpty(sortOrder) ? "course_desc" : "";
+            ViewData["StudentSort"] = sortOrder == "Student" ? "student_desc" : "Student";
 
             var records = from r in _context.Academicrecords.Include(a => a.CourseCodeNavigation).Include(a => a.Student)
                           select r;
@@ -63,15 +57,11 @@ namespace LabAssignment6.Controllers
                 case "course_desc":
                     records = records.OrderByDescending(r => r.Grade == null).ThenByDescending(r => r.CourseCodeNavigation.Title);
                     break;
-                case "Student":
-                    records = records.OrderBy(r => r.Grade == null).ThenBy(r => r.Student.Name);
-                    break;
+
                 case "student_desc":
                     records = records.OrderByDescending(r => r.Grade == null).ThenByDescending(r => r.Student.Name);
                     break;
-                default:
-                    records = records.OrderBy(r => r.Grade == null).ThenBy(r => r.CourseCodeNavigation.Title);
-                    break;
+
             }
 
             return View(await records.AsNoTracking().ToListAsync());

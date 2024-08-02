@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using lab6.DataAccess;
+using lab6.Models.ViewModel;
 
 namespace lab6.Controllers
 {
@@ -21,29 +22,49 @@ namespace lab6.Controllers
         // GET: Employees
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Employees.ToListAsync());
+            var employees = await _context.Employees.Include(e => e.Roles).ToListAsync();
+            return View(employees);
         }
 
         // GET: Employees/Create
         public IActionResult Create()
         {
-            return View();
+            var model = new SelectEmployeeRole
+            {
+                Employee = new Employee(),
+                Roles = _context.Roles.Select(r => new RoleSelection
+                {
+                    RoleId = r.Id,
+                    RoleName = r.Role1,
+                    IsSelected = false
+                }).ToList()
+            };
+            return View(model);
         }
 
         // POST: Employees/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,UserName,Password")] Employee employee)
+        public async Task<IActionResult> Create(SelectEmployeeRole model)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(employee);
+                foreach (var roleSelection in model.Roles)
+                {
+                    if (roleSelection.IsSelected)
+                    {
+                        var role = await _context.Roles.FindAsync(roleSelection.RoleId);
+                        if (role != null)
+                        {
+                            model.Employee.Roles.Add(role);
+                        }
+                    }
+                }
+                _context.Add(model.Employee);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(employee);
+            return View(model);
         }
 
         // GET: Employees/Edit/5
@@ -54,36 +75,74 @@ namespace lab6.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employees.FindAsync(id);
+            var employee = await _context.Employees.Include(e => e.Roles).FirstOrDefaultAsync(e => e.Id == id);
             if (employee == null)
             {
                 return NotFound();
             }
-            return View(employee);
+
+            var model = new SelectEmployeeRole
+            {
+                Employee = employee,
+                Roles = _context.Roles.AsEnumerable().Select(r => new RoleSelection
+                {
+                    RoleId = r.Id,
+                    RoleName = r.Role1,
+                    IsSelected = employee.Roles.Any(er => er.Id == r.Id)
+                }).ToList()
+            };
+
+            return View(model);
         }
 
         // POST: Employees/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,UserName,Password")] Employee employee)
+        public async Task<IActionResult> Edit(int id, SelectEmployeeRole model)
         {
-            if (id != employee.Id)
+            if (id != model.Employee.Id)
             {
                 return NotFound();
+            }
+
+            if (model.Roles == null)
+            {
+                model.Roles = new List<RoleSelection>();
             }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(employee);
+                    var employeeToUpdate = await _context.Employees.Include(e => e.Roles).FirstOrDefaultAsync(e => e.Id == id);
+                    if (employeeToUpdate == null)
+                    {
+                        return NotFound();
+                    }
+
+                    employeeToUpdate.Name = model.Employee.Name;
+                    employeeToUpdate.UserName = model.Employee.UserName;
+                    employeeToUpdate.Password = model.Employee.Password;
+
+                    employeeToUpdate.Roles.Clear();
+                    foreach (var roleSelection in model.Roles)
+                    {
+                        if (roleSelection.IsSelected)
+                        {
+                            var role = await _context.Roles.FindAsync(roleSelection.RoleId);
+                            if (role != null)
+                            {
+                                employeeToUpdate.Roles.Add(role);
+                            }
+                        }
+                    }
+
+                    _context.Update(employeeToUpdate);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!EmployeeExists(employee.Id))
+                    if (!EmployeeExists(model.Employee.Id))
                     {
                         return NotFound();
                     }
@@ -94,7 +153,7 @@ namespace lab6.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(employee);
+            return View(model);
         }
         private bool EmployeeExists(int id)
         {
